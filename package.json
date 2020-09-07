@@ -1,0 +1,29 @@
+{
+  "name": "dungary-server",
+  "version": "1.0.0",
+  "description": "dungary admin",
+  "main": "index.js",
+  "repository": "https://github.com/bbbonnana/dungary-server.git",
+  "author": "LiNKS <a824759414@gmail.com>",
+  "license": "MIT",
+  "private": true,
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run lint"
+    }
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.2",
+    "eslint": "^7.8.1",
+    "eslint-config-standard": "^14.1.1",
+    "eslint-plugin-import": "^2.22.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1",
+    "husky": "^4.2.5"
+  }
+}
