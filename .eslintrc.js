@@ -16,6 +16,7 @@ module.exports = {
     'no-unused-expressions': ['warn'],
     'no-unused-vars': ['warn'],
     'keyword-spacing': ['warn'],
-    'no-trailing-spaces': ['warn']
+    'no-trailing-spaces': ['warn'],
+    'no-new': 'off'
   }
 }
