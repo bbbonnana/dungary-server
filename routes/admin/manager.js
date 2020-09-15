@@ -1,7 +1,7 @@
+const ManagerController = require('@controller/admin/manager')
+
 module.exports = function(router) {
   router
     .route('/manager')
-    .get((req, res) => {
-      res.send('哈哈哈')
-    })
+    .post(ManagerController.registerService)
 }

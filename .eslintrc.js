@@ -17,6 +17,13 @@ module.exports = {
     'no-unused-vars': ['warn'],
     'keyword-spacing': ['warn'],
     'no-trailing-spaces': ['warn'],
-    'no-new': 'off'
+    'no-new': 'off',
+    'padded-blocks': 'off',
+    'prefer-const': 'off',
+    'lines-between-class-members': 'off'
+  },
+  globals: {
+    AppError: 'readonly',
+    ValidatorError: 'readonly'
   }
 }

@@ -2,6 +2,7 @@ const { readdirSync } = require('fs')
 const pathLib = require('path')
 const { red, green } = require('chalk')
 
+// 自动挂载路由
 module.exports = function(dirPath, target) {
   let i = -1
   const dirents = readdirSync(dirPath, { withFileTypes: true })
