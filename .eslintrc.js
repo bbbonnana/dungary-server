@@ -21,9 +21,5 @@ module.exports = {
     'padded-blocks': 'off',
     'prefer-const': 'off',
     'lines-between-class-members': 'off'
-  },
-  globals: {
-    AppError: 'readonly',
-    ValidatorError: 'readonly'
   }
 }

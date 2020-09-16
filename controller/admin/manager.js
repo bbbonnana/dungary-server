@@ -2,9 +2,9 @@
 const Validator = require('@utils/Validator')
 const { md5 } = require('@utils/utils')
 const Manager = require('@models/admin/Manager')
-const { ValidatorError, DatabaseError } = require('@error/index')
-const { SuccessResponse } = require('@response/index')
+const { ValidatorError } = require('@error/index')
 const Id = require('@models/Id')
+const { AppError } = require('../../define/error')
 
 const registerValidator = new Validator({
   username: [
@@ -30,22 +30,29 @@ class ManagerController {
     this
       .register(params)
       .then(user => {
-        new SuccessResponse({
-          codeType: 'S_ADD',
+        res.status(200).success({
           message: '注册成功',
           data: user
-        }).send(res)
+        })
       })
       .catch(err => {
-        next(new DatabaseError(err))
+        if (!(err instanceof AppError)) {
+          err = new AppError(err.message, 'F400')
+        }
+        next(err)
       })
   }
   // 注册
   async register(params) {
+    const { username, password } = params
+    const existedManager = await Manager.findOne({ username })
+    if (existedManager) {
+      throw new AppError('该管理员已存在', 'F200')
+    }
     const userId = await Id.generateId('userId')
     const manager = new Manager({
-      username: params.username,
-      password: md5(params.password),
+      username: username,
+      password: md5(password),
       role: 'general',
       userId
     })

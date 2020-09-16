@@ -2,7 +2,7 @@ const { green, red } = require('chalk')
 const mount = require('../routes/index')
 const bodyParser = require('body-parser')
 const { AppError } = require('@error/index')
-const { ErrorResponse } = require('@response/index')
+const { success, fail } = require('@response/index')
 
 const proto = {}
 
@@ -12,20 +12,35 @@ proto.thirdParty = function(app) {
   return this
 }
 
+// 注册自定义中间件
+proto.selfParty = function(app) {
+  app.use((req, res, next) => {
+    res.success = success.bind(res)
+    res.fail = fail.bind(res)
+    next()
+  })
+  return this
+}
+
 // 异常捕获
 proto.errorCatch = function(app) {
   // 自定义错误
   app.use((err, req, res, next) => {
+    // 响应已经发送
+    if (res.headersSent) {
+      console.log(red(err))
+      return
+    }
     if (!(err instanceof Error)) {
       next(err)
+      return
     }
-    new ErrorResponse(err).send(res)
+    res.fail(err)
   })
-  // 未知错误
+  // 不是Error类型
   app.use((err, req, res, next) => {
     console.log(red(err))
-    const appError = new AppError(err)
-    new ErrorResponse(appError).send(res)
+    res.fail(new AppError(err, 'F000'))
   })
   return this
 }

@@ -9,6 +9,7 @@ const app = express()
 
 AppManager
   .thirdParty(app) // 注册第三方中间件
+  .selfParty(app) // 注册自定义中间件
   .registerRoutes(app) // 注册路由
   .errorCatch(app) // 异常捕获
   .launch(app, 9100)
