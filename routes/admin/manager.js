@@ -4,4 +4,8 @@ module.exports = function(router) {
   router
     .route('/manager')
     .post(ManagerController.registerService)
+
+  router
+    .route('/manager/login')
+    .post(ManagerController.loginService)
 }

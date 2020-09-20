@@ -7,13 +7,13 @@ const { success, fail } = require('@response/index')
 const proto = {}
 
 // 注册第三方中间件
-proto.thirdParty = function(app) {
+proto.mountThirdParty = function(app) {
   app.use(bodyParser.urlencoded({ extended: false }))
   return this
 }
 
 // 注册自定义中间件
-proto.selfParty = function(app) {
+proto.mountSelfParty = function(app) {
   app.use((req, res, next) => {
     res.success = success.bind(res)
     res.fail = fail.bind(res)
@@ -23,7 +23,7 @@ proto.selfParty = function(app) {
 }
 
 // 异常捕获
-proto.errorCatch = function(app) {
+proto.mountErrorCatch = function(app) {
   // 自定义错误
   app.use((err, req, res, next) => {
     // 响应已经发送

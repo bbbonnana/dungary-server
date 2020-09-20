@@ -1,11 +1,19 @@
-const crypto = require('crypto')
+const { AES, SHA256, enc } = require('crypto-js')
 
-function md5(str) {
-  const suffix = 'DUNGARY_666'
-  const md5Obj = crypto.createHash('md5')
-  return md5Obj.update(str + suffix).digest('hex')
+function sha256(str) {
+  return SHA256(str).toString()
+}
+
+function encryptAES(payload, secret) {
+  return AES.encrypt(JSON.stringify(payload), secret).toString()
+}
+
+function decryptAES(token, secret) {
+  return JSON.parse(AES.decrypt(token, secret).toString(enc.Utf8))
 }
 
 module.exports = {
-  md5
+  sha256,
+  encryptAES,
+  decryptAES
 }

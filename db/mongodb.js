@@ -1,8 +1,9 @@
 const mongoose = require('mongoose')
 const { yellow, green, red } = require('chalk')
-const { socket, dbName } = require('./config/db')
+const { host, port, dbName } = require('../config/db')
 
-const url = `mongodb://${socket}/${dbName}`
+// 连接mongodb
+const url = `mongodb://${host}:${port}/${dbName}`
 const connectOptions = {
   useUnifiedTopology: true,
   useNewUrlParser: true

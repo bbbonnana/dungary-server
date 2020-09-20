@@ -1,6 +1,6 @@
 
 const Validator = require('@utils/Validator')
-const { md5 } = require('@utils/utils')
+const { sha256 } = require('@utils/utils')
 const Manager = require('@models/admin/Manager')
 const { ValidatorError } = require('@error/index')
 const Id = require('@models/Id')
@@ -16,10 +16,17 @@ const registerValidator = new Validator({
   ]
 })
 
+const loginValidator = new Validator({
+  username: [{ required: true, message: 'invalid username' }],
+  password: [{ required: true, message: 'invalid password' }]
+})
+
 class ManagerController {
   constructor() {
     this.registerService = this.registerService.bind(this)
+    this.loginService = this.loginService.bind(this)
   }
+
   // 注册服务
   registerService(req, res, next) {
     const params = req.body
@@ -42,6 +49,7 @@ class ManagerController {
         next(err)
       })
   }
+
   // 注册
   async register(params) {
     const { username, password } = params
@@ -49,14 +57,56 @@ class ManagerController {
     if (existedManager) {
       throw new AppError('该管理员已存在', 'F200')
     }
-    const userId = await Id.generateId('userId')
+    const managerId = await Id.generateId('managerId')
     const manager = new Manager({
       username: username,
-      password: md5(password),
+      password: sha256(password),
       role: 'general',
-      userId
+      id: managerId
     })
+    // 返回注册好的用户信息
     return (await manager.save()).toObject({ hide: '_id password' })
+  }
+
+  // 登录服务
+  loginService(req, res, next) {
+    const params = req.body
+    const result = loginValidator.validate(params)
+    if (!result.result) {
+      throw new ValidatorError(result)
+    }
+    this
+      .login(params, req.app.get('redis'))
+      .then(({ manager, accessToken, refreshToken }) => {
+        res.set('SET-ACT', accessToken)
+        res.set('SET-RFT', refreshToken)
+        res.status(200).success({
+          message: '登录成功',
+          data: manager
+        })
+      })
+      .catch(err => {
+        if (!(err instanceof AppError)) {
+          err = new AppError(err.message, 'F400')
+        }
+        next(err)
+      })
+  }
+
+  // 登录
+  async login({ username, password }) {
+    const hashPassword = sha256(password)
+    const manager = await Manager.findOne({ username, password: hashPassword })
+    if (!manager) {
+      throw new AppError('用户名或密码错误', 'F301')
+    }
+    // 生成RefreshToken和AccessToken并保存至redis
+    const { accessToken, refreshToken } = await manager.generateToken()
+    return {
+      manager: manager.toObject({ hide: '_id password' }),
+      accessToken,
+      refreshToken
+    }
   }
 }
 
