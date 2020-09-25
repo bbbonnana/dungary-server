@@ -6,6 +6,23 @@ const { success, fail } = require('@response/index')
 
 const proto = {}
 
+// 请求源处理
+proto.netWork = function(app) {
+  app.all('*', (req, res, next) => {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*') /* 暂时放开 */
+    res.header('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With, Dg-Identity, Dg-Act, Dg-Rft')
+    res.header('Access-Control-Allow-Methods', 'PUT,POST,GET,DELETE,OPTIONS')
+    res.header('Access-Control-Allow-Credentials', true) // 可以带cookies
+    res.header('X-Powered-By', 'DUNGARY-SERVER')
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(200)
+    } else {
+      next()
+    }
+  })
+  return this
+}
+
 // 注册第三方中间件
 proto.mountThirdParty = function(app) {
   app.use(bodyParser.urlencoded({ extended: false }))

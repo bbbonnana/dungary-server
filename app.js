@@ -10,6 +10,7 @@ const app = express()
 app.set('redis', redisClient)
 
 AppManager
+  .netWork(app)
   .mountThirdParty(app) // 注册第三方中间件
   .mountSelfParty(app) // 注册自定义中间件
   .registerRoutes(app) // 注册路由
