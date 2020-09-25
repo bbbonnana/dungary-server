@@ -6,7 +6,7 @@ class ValidatorError extends AppError {
       throw new Error('Invalid validateResult in ValidatorError')
     }
     const iField = validateResult.invalidFields[0]
-    super('validate: ' + validateResult.info[iField].message, 'F100')
+    super(validateResult.info[iField].message, 'F100')
   }
 }
 

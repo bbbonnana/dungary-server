@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 const redis = require('@db/redis')
-const { encryptAES } = require('@utils/utils')
+const { encryptAES, decryptAES } = require('@utils/utils')
 
 const managerSchema = new mongoose.Schema({
   id: String,
@@ -21,33 +21,69 @@ toObjOptions.transform = function(doc, ret, options) {
   return ret
 }
 
+function getAcSecret(id) {
+  return `DG:ACT:MANAGER:${id}`
+}
+
+function getRfSecret(id, role, shaPassword) {
+  return `DG:RFT:MANAGER:${id}_${role}_${shaPassword}`
+}
+
+function getAcRedisKey(id) {
+  return `ADMIN:MANAGER:${id}:ACTOKEN`
+}
+
+function getRfRedisKey(id) {
+  return `ADMIN:MANAGER:${id}:RFTOKEN`
+}
+
+// 编码AccessToken
 managerSchema.methods.encryptAcToken = function() {
-  const secret = `DG:ACT:MANAGER:${this.id}`
+  const secret = getAcSecret(this.id)
   return encryptAES({ id: this.id, role: this.role }, secret)
 }
 
+// 编码RefreshToken
 managerSchema.methods.encryptRfToken = function() {
-  const secret = `DG:RFT:MANAGER:${this.id}_${this.role}_${this.password}`
+  const secret = getRfSecret(this.id, this.role, this.password)
   return encryptAES({ id: this.id, role: this.role }, secret)
 }
 
+// 编码生成token并存入redis
 managerSchema.methods.generateToken = async function() {
   const accessToken = this.encryptAcToken()
   const refreshToken = this.encryptRfToken()
-  await redis.set(`ADMIN:MANAGER:${this.id}:ACTOKEN`, accessToken)
-  await redis.expire(`ADMIN:MANAGER:${this.id}:ACTOKEN`, 60)
-  await redis.set(`ADMIN:MANAGER:${this.id}:RFTOKEN`, refreshToken)
-  await redis.expire(`ADMIN:MANAGER:${this.id}:RFTOKEN`, 300)
+  const acRedisKey = getAcRedisKey(this.id)
+  const rfRedisKey = getRfRedisKey(this.id)
+  await redis.set(acRedisKey, accessToken)
+  await redis.expire(acRedisKey, 10)
+  await redis.set(rfRedisKey, refreshToken)
+  await redis.expire(rfRedisKey, 300)
   return {
     accessToken,
     refreshToken
   }
 }
 
-// managerSchema.statics.decryptAcToken = function(id, token) {
-//   const secret = `DG:ACT:MANAGER:${id}`
-//   return decryptAES(token, secret)
-// }
+// 解码AccessToken
+managerSchema.statics.decryptAcToken = function(id, token) {
+  const secret = getAcSecret(id)
+  return decryptAES(token, secret)
+}
+
+// 解码AccessToken
+managerSchema.statics.isAcTokenValid = async function(id, token) {
+  const key = getAcRedisKey(id)
+  const prevToken = await redis.get(key)
+  if (!prevToken) {
+    // 说明token已过期
+    return -1
+  } else if (prevToken !== token) {
+    // token有效，但不是最新，要求客户端刷新token
+    return 0
+  }
+  return 1
+}
 
 // managerSchema.statics.decryptRfToken = function(id, token) {
 //   const secret = `DG:RFT:MANAGER:${id}`
