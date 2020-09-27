@@ -12,8 +12,8 @@ proto.netWork = function(app) {
     res.header('Access-Control-Allow-Origin', req.headers.origin || '*') /* 暂时放开 */
     res.header('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With, Dg-Identity, Dg-Act, Dg-Rft')
     res.header('Access-Control-Allow-Methods', 'PUT,POST,GET,DELETE,OPTIONS')
-    res.header('Access-Control-Allow-Credentials', true) // 可以带cookies
-    res.header('X-Powered-By', 'DUNGARY-SERVER')
+    // res.header('Access-Control-Allow-Credentials', true) // 可以带cookies
+    res.set('Access-Control-Expose-Headers', 'Set-Act, Set-Rft')
     if (req.method === 'OPTIONS') {
       res.sendStatus(200)
     } else {

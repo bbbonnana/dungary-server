@@ -39,7 +39,7 @@ class ManagerController {
       return next(new ValidatorError(result))
     }
     try {
-      const manager = await this._getManager(req.body.username)
+      const manager = await this.doGetManager(req.body.username)
       res.status(200).success({ data: !!manager })
     } catch (err) {
       next(err)
@@ -55,7 +55,7 @@ class ManagerController {
     }
     // 校验通过
     try {
-      const user = await this._register(params.username, params.password)
+      const user = await this.doRegister(params.username, params.password)
       res.status(200).success({
         message: '注册成功',
         data: user
@@ -77,8 +77,7 @@ class ManagerController {
     }
     // 校验字段完成
     try {
-      const { manager, accessToken, refreshToken } = await this._login(params.username, params.password)
-      res.set('Access-Control-Expose-Headers', 'Set-Act, Set-Rft')
+      const { manager, accessToken, refreshToken } = await this.doLogin(params.username, params.password)
       res.set('Set-Act', accessToken)
       res.set('Set-Rft', refreshToken)
       res.status(200).success({
@@ -94,7 +93,7 @@ class ManagerController {
   }
 
   // 注册操作
-  async _register(username, password) {
+  async doRegister(username, password) {
     const existedManager = await Manager.findOne({ username })
     if (existedManager) {
       throw new AppError('该管理员已存在', 'F200')
@@ -111,8 +110,8 @@ class ManagerController {
   }
 
   // 登录操作
-  async _login(username, password) {
-    const manager = await this._getManager(username, password)
+  async doLogin(username, password) {
+    const manager = await this.doGetManager(username, password)
     if (!manager) {
       throw new AppError('用户名或密码错误', 'F201')
     }
@@ -126,11 +125,17 @@ class ManagerController {
   }
 
   // 获取管理员
-  async _getManager(username, password) {
+  async doGetManager(username, password) {
     const query = { username }
     if (password) {
       query.password = sha256(password)
     }
+    return Manager.findOne(query)
+  }
+
+  // 通过id获取管理员
+  async doGetManagerById(id) {
+    const query = { id }
     return Manager.findOne(query)
   }
 }

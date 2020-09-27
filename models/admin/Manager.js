@@ -37,58 +37,82 @@ function getRfRedisKey(id) {
   return `ADMIN:MANAGER:${id}:RFTOKEN`
 }
 
-// 编码AccessToken
-managerSchema.methods.encryptAcToken = function() {
+// 编码并生成AccessToken
+managerSchema.methods.genAct = async function() {
   const secret = getAcSecret(this.id)
-  return encryptAES({ id: this.id, role: this.role }, secret)
+  const accessToken = encryptAES({ id: this.id, role: this.role }, secret)
+  const acRedisKey = getAcRedisKey(this.id)
+  await redis.set(acRedisKey, accessToken)
+  await redis.expire(acRedisKey, 30)
+  return accessToken
 }
 
-// 编码RefreshToken
-managerSchema.methods.encryptRfToken = function() {
+// 编码并生成RefreshToken
+managerSchema.methods.genRft = async function() {
   const secret = getRfSecret(this.id, this.role, this.password)
-  return encryptAES({ id: this.id, role: this.role }, secret)
+  const refreshToken = encryptAES({ id: this.id, role: this.role }, secret)
+  const rfRedisKey = getRfRedisKey(this.id)
+  await redis.set(rfRedisKey, refreshToken)
+  await redis.expire(rfRedisKey, 300)
+  return refreshToken
 }
 
 // 编码生成token并存入redis
 managerSchema.methods.generateToken = async function() {
-  const accessToken = this.encryptAcToken()
-  const refreshToken = this.encryptRfToken()
-  const acRedisKey = getAcRedisKey(this.id)
-  const rfRedisKey = getRfRedisKey(this.id)
-  await redis.set(acRedisKey, accessToken)
-  await redis.expire(acRedisKey, 10)
-  await redis.set(rfRedisKey, refreshToken)
-  await redis.expire(rfRedisKey, 300)
-  return {
-    accessToken,
-    refreshToken
-  }
+  const accessToken = await this.genAct()
+  const refreshToken = await this.genRft()
+  return { accessToken, refreshToken }
 }
 
 // 解码AccessToken
-managerSchema.statics.decryptAcToken = function(id, token) {
+managerSchema.statics.decryptAct = function(id, token) {
   const secret = getAcSecret(id)
   return decryptAES(token, secret)
 }
 
-// 解码AccessToken
-managerSchema.statics.isAcTokenValid = async function(id, token) {
+// 获取当前AccessToken
+managerSchema.statics.getCurAct = async function(id) {
   const key = getAcRedisKey(id)
-  const prevToken = await redis.get(key)
-  if (!prevToken) {
-    // 说明token已过期
-    return -1
-  } else if (prevToken !== token) {
-    // token有效，但不是最新，要求客户端刷新token
-    return 0
-  }
-  return 1
+  return await redis.get(key)
 }
 
-// managerSchema.statics.decryptRfToken = function(id, token) {
-//   const secret = `DG:RFT:MANAGER:${id}`
-//   return decryptAES(token, secret)
-// }
+// 校验AccessToken
+managerSchema.statics.isActValid = async function(id, token) {
+  const curToken = await this.getCurAct(id)
+  if (!curToken) {
+    // 说明token已过期
+    return { status: -1, curToken }
+  } else if (curToken !== token) {
+    // token有效，但不是最新，要求客户端刷新token
+    return { status: 0, curToken }
+  }
+  return { status: 1, curToken }
+}
+
+// 解码RefreshToken
+managerSchema.statics.decryptRft = function(id, role, shaPassword, token) {
+  const secret = getRfSecret(id, role, shaPassword)
+  return decryptAES(token, secret)
+}
+
+// 获取当前RefreshToken
+managerSchema.statics.getCurRft = async function(id) {
+  const key = getRfRedisKey(id)
+  return await redis.get(key)
+}
+
+// 校验RefreshToken
+managerSchema.statics.isRftValid = async function(id, token) {
+  const curToken = await this.getCurRft(id)
+  if (!curToken) {
+    // 说明token已过期
+    return { status: -1, curToken }
+  } else if (curToken !== token) {
+    // token有效，但不是最新
+    return { status: 0, curToken }
+  }
+  return { status: 1, curToken }
+}
 
 const Manager = mongoose.model(
   'Manager',
